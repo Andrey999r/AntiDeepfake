@@ -1,4 +1,4 @@
-version: "3.8"
+
 services:
   backend:
     build:
@@ -19,7 +19,16 @@ services:
       - backend
     networks:
       - app-network
-
+  tgbot:
+    build:
+      context: ./src/TgBot
+      dockerfile: Dockerfile
+    ports:
+      - "4000:80"    
+    depends_on:
+      - backend
+    networks:
+      - app-network
 networks:
   app-network:
     driver: bridge
