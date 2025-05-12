@@ -1,52 +1,38 @@
 import sys
-import os
-import torch
-from detector import TwoStreamDeepFakeDetector, preprocess_two_stream
-
-def get_executable_dir():
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+from mega_detector_system import MegaDeepFake
 
 def main():
     if len(sys.argv) != 2:
-        print("❌ Ошибка: укажите путь к видео.")
-        sys.exit(2)
+        print("Usage: python main.py <path_to_video>")
+        sys.exit(2)  # 2 = неправильное использование
 
     video_path = sys.argv[1]
-    if not os.path.isfile(video_path):
-        print(f"❌ Видео не найдено: {video_path}")
-        sys.exit(3)
+    detector = MegaDeepFake()
+    score = detector.predict(video_path)
 
-    exe_dir    = get_executable_dir()
-    model_path = os.path.abspath(os.path.join(exe_dir, '..', 'models', 'deepfake_detector.pth'))
-    if not os.path.isfile(model_path):
-        print(f"❌ Вес модели не найдены по пути: {model_path}")
-        sys.exit(4)
+    is_fake = int(score > 0.5)
+    print(f"Score: {score:.3f} → {'FAKE' if is_fake else 'REAL'}")
+    sys.exit(is_fake)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"✅ Устройство: {device}")
+if __name__ == '__main__':
+    main()
+# main.py
 
-    print("🔄 Загружаем модель...")
-    model = TwoStreamDeepFakeDetector().to(device)
-    ckpt  = torch.load(model_path, map_location=device)
-    state_dict = ckpt.get('model_state', ckpt)
-    model.load_state_dict(state_dict)
-    model.eval()
+import sys
+from mega_detector_system import MegaDeepFake
 
-    print("🎞️ Обрабатываем видео (RGB + Flow)...")
-    rgb_t, flow_t = preprocess_two_stream(video_path)
-    rgb_t, flow_t = rgb_t.to(device), flow_t.to(device)
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python main.py <path_to_video>")
+        sys.exit(2)  # 2 = неправильное использование
 
-    print("🤖 Выполняем инференс...")
-    with torch.no_grad():
-        logit = model(rgb_t, flow_t)
-        prob  = torch.sigmoid(logit).item()
+    video_path = sys.argv[1]
+    detector = MegaDeepFake()
+    score = detector.predict(video_path)
 
-    print(f"📊 Вероятность дипфейка: {prob:.4f}")
-    label = 1 if prob > 0.5 else 0
-    print(f"🏷️ Результат: {'DeepFake' if label else 'Real'}")
-    sys.exit(label)
+    is_fake = int(score > 0.5)
+    print(f"Score: {score:.3f} → {'FAKE' if is_fake else 'REAL'}")
+    sys.exit(is_fake)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
