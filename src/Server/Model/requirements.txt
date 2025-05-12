@@ -1,5 +1,11 @@
-torch
-torchvision
 opencv-python
 numpy
+librosa
+torch
+torchvision
+timm
+face-alignment
+scipy
+Pillow
+transformers
 tqdm
