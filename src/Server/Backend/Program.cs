@@ -14,19 +14,22 @@ app.UseCors(builder => builder.AllowAnyOrigin());
 app.MapPost("/upload", async (IFormFile file, ICheckFileService checkFileService, 
     ISaveFileService saveFileService, IRunModelService runModelService) =>
 {
-    if (file == null) return Results.BadRequest("Файл не предоставлен");
+    if (file == null)
+        return Results.Text("Файл не предоставлен", "text/plain");
 
-    if (!await checkFileService.IsVideoFileAsync(file)) return Results.BadRequest("Файл не является видео");
+    if (!await checkFileService.IsVideoFileAsync(file))
+        return Results.Text("Файл не является видео", "text/plain");
 
     string filePath = await saveFileService.Save(file);
-
     int exitCode = await runModelService.Run(filePath);
 
-    if (exitCode == 1) return Results.Ok("Видео DeepFake");
-    if (exitCode == 2) return Results.BadRequest("Ошибка запуска");
-    if (exitCode == 3) return Results.BadRequest("Файл видео не найден");
-
-    return Results.Ok("Видео реальное");
+    return exitCode switch
+    {
+        0 => Results.Text("Видео реальное", "text/plain"),
+        1 => Results.Text("Видео DeepFake", "text/plain"),
+        2 => Results.Text("Ошибка запуска", "text/plain"),
+        _ => Results.Text("Файл видео не найден", "text/plain")
+    };
 }).DisableAntiforgery();
 
 app.Run();

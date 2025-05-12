@@ -29,6 +29,11 @@ async Task OnMessage(Message msg, UpdateType type)
     }
     else if (msg.Video != null)
     { 
+        if (msg.Video.FileSize > 20 * 1024 * 1024) 
+        {
+            await bot.SendMessage(msg.Chat, "Файл слишком большой. Отправьте видео размером до 20MB.");
+            return;
+        }
         await using var fileStream = new MemoryStream();
         var tgFile = await bot.GetInfoAndDownloadFile(msg.Video.FileId, fileStream);
         var result = await SendVideoToBackend(fileStream);
@@ -43,6 +48,8 @@ async Task<string> SendVideoToBackend(MemoryStream videoStream)
 {
     using (var client = new HttpClient())
     {
+        videoStream.Position = 0;
+
         var form = new MultipartFormDataContent();
 
         var fileContent = new StreamContent(videoStream);
